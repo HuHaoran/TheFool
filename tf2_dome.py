@@ -35,7 +35,6 @@ class MyModel(Model):
 
 # Create an instance of the model
 model = MyModel()
-
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 optimizer = tf.keras.optimizers.Adam()
@@ -92,5 +91,5 @@ for epoch in range(EPOCHS):
     f'Test Loss: {test_loss.result()}, '
     f'Test Accuracy: {test_accuracy.result() * 100}'
   )
-
+print(model.weights)
 print("use time:", time.time() - t)
