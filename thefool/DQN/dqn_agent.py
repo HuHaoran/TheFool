@@ -10,14 +10,13 @@ class DQN:
                  env,
                  test_env,
                  learning_rate=3e-4,
-                 memory_size=128000,
+                 memory_size=64000,
                  batch_size=64,
                  gamma=0.99,
                  max_grad_norm=0.5,
                  skip_num=4,
                  replace_step=1000,
                  ):
-        self.scope = "ppo"
         self.env = env
         self.test_env = test_env
         self.train_nums = env.env_nums
@@ -25,7 +24,7 @@ class DQN:
         self.learning_rate = learning_rate
         self.memory_size = memory_size
         self.observation_shape = list(self.env.observation_shape)
-        self.num_actions = self.env.action_space.n
+        self.num_actions = int(self.env.action_space.n)
         self.max_grad_norm = max_grad_norm
         self.replace_step = replace_step
         self.linearDecay = LinearScheduler(1.0, 100000, 0.1, "LinearDecay")
@@ -57,6 +56,7 @@ class DQN:
         if self.global_step > 10000:
             if (self.global_step / self.train_nums) % self.skip_num == 0:
                 self.train()
+                # print("loss:", loss.numpy())
             if (self.global_step / self.train_nums) % self.replace_step == 0:
                 self.replace_target_weight()
 
@@ -75,29 +75,33 @@ class DQN:
         action = tf.argmax(q_values, axis=-1).numpy()
         return action
 
-    @tf.function
+
     def train(self):
-        loss = 0
         for i in range(self.train_nums):
             obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t = self.dataset.sample_unit_batch(i, self.batch_size)
-            with tf.GradientTape() as tape:
-                train_q_value = self.model(obs_t, training=True)
-                # train_q_next_value = self.model(obs_next_t)
-                target_q_value = self.target_model(obs_next_t)
-
-                y_target = tf.stop_gradient(reward_t + (1 - done_t) * self.gamma * tf.reduce_max(target_q_value, axis=-1))
-                q_value_action = tf.reduce_sum(tf.one_hot(action_t, self.num_actions) * train_q_value, axis=-1)
-                value_loss = tf.reduce_mean(tf.square(y_target - q_value_action))
-
-                gradients = tape.gradient(value_loss, self.model.trainable_variables)
-                clipped_gradients, _ = tf.clip_by_global_norm(gradients, self.max_grad_norm)
-                self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+            self._tf_train(obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t)
 
             # if self.use_per:
             #     priority = np.sqrt(np.minimum(priority, 1) + 1e-6)
             #     self.dataset.sample_update_priority(i, priority)
             # loss += td_error
-        return loss
+
+    @tf.function
+    def _tf_train(self, obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t):
+        with tf.GradientTape() as tape:
+            train_q_value = self.model(obs_t, training=True)
+            target_q_value = self.target_model(obs_next_t)
+
+            y_target = tf.stop_gradient(reward_t + (1 - done_t) * self.gamma * tf.reduce_max(target_q_value, axis=-1))
+            num_actions = tf.convert_to_tensor(self.num_actions, dtype=tf.int32)
+            a = tf.one_hot(action_t, num_actions)
+            b = a * train_q_value
+            q_value_action = tf.reduce_sum(b, axis=-1)
+            value_loss = tf.reduce_mean(tf.square(y_target - q_value_action))
+
+            gradients = tape.gradient(value_loss, self.model.trainable_variables)
+            clipped_gradients, _ = tf.clip_by_global_norm(gradients, self.max_grad_norm)
+            self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
 
     def replace_target_weight(self):
         self.target_model.set_weights(self.model.get_weights())

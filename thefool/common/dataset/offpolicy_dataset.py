@@ -9,7 +9,7 @@ class MemoryUnit:
                  use_per=False):
         self.obs_shape = obs_shape
         self.obs_t = np.zeros([size] + obs_shape, dtype=np.float32)
-        self.actions_t = np.zeros([size], dtype=np.float32)
+        self.actions_t = np.zeros([size], dtype=np.int32)
         self.reward_t = np.zeros([size], dtype=np.float32)
         self.done_t = np.zeros([size], dtype=np.float32)
         self.index = 0
@@ -85,7 +85,7 @@ class OffPolicyMemoryPool:
                  nenv,
                  obs_shape,
                  size,
-                 n_step=1,
+                 n_step=3,
                  use_per=False):
         self.n_step = n_step
         self.nenv = nenv

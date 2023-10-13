@@ -19,7 +19,6 @@ class DQNNetwork(tf.keras.Model):
         self.dense2 = tf.keras.layers.Dense(num_actions, name='fully_connected')
     def call(self, state):
         x = tf.cast(state, tf.float32)
-        x = x / 255
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
