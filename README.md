@@ -9,9 +9,10 @@ conda create -n your_env_name python=3.8
 ### 激活虚拟环境后，顺序执行
 1. conda install -c conda-forge cudatoolkit==11.2.2
 2. conda install -c conda-forge cudnn==8.1.0.77
-3. pip install gymnasium
-4. pip install gymnasium[atari]
-5. pip install tensorflow==2.10
-6. pip install --no-index -f https://github.com/Kojoley/atari-py/releases atari_py
-7. pip install opencv-python
-8. pip install tqdm
+3. conda install -c nvidia cuda-nvcc
+4. pip install gymnasium
+5. pip install gymnasium[atari]
+6. pip install tensorflow==2.10
+7. pip install --no-index -f https://github.com/Kojoley/atari-py/releases atari_py
+8. pip install opencv-python
+9. pip install tqdm
