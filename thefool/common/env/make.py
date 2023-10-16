@@ -26,7 +26,7 @@ def make_raw_atari_game(env_name, num_envs):
     return batch_env
 
 
-def make_atari_game(env_name, num_envs, obs_shape, stack_frame=4, test_num_envs=8):
+def make_atari_game(env_name, num_envs, obs_shape, stack_frame=4, test_num_envs=1):
     def state_preprocess(state):
         state = atari_preprocess(state, obs_shape)
         state = np.array(state, dtype=np.float32)

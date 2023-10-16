@@ -38,13 +38,14 @@ def learn_process(train_env, test_env, act_func, eval_func, total_steps):
 
 def eval_process(test_env, eval_func, total_step):
 
+    episodes = 0
     local_step = 0
     test_nums = test_env.env_nums
     episode_reward = [0 for _ in range(test_nums)]
     states = test_env.reset()
     sum_reward = []
 
-    while local_step < total_step:
+    while local_step < total_step and episodes < 100:
 
         action = eval_func(states)
         states, rewards, dones, infos = test_env.step(action)
@@ -52,8 +53,9 @@ def eval_process(test_env, eval_func, total_step):
         for i, (state, reward, done) in enumerate(zip(states, rewards, dones)):
             episode_reward[i] += reward
             if done:
+                episodes += 1
                 raw_reward = episode_reward[i]
                 episode_reward[i] = 0
                 sum_reward.append(raw_reward)
 
-    print("average reward:", np.average(sum_reward), "max reward:", np.max(sum_reward))
+    print("average reward:", np.average(sum_reward), "max reward:", np.max(sum_reward), "episodes:", episodes)

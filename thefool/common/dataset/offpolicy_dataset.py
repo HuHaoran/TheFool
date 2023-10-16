@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from thefool.common.dataset.sum_tree import SumTree
 import math
@@ -67,7 +69,7 @@ class MemoryUnit:
             if index >= tmp_new_index:
                 tmp_new_index += self.size
             if index + step > tmp_new_index:
-                batch_index[i] = (batch_index[i] - step) % self.size
+                batch_index[i] = (batch_index[i] - random.randint(step, self.size-step)) % self.size
 
         for i in range(step - 1):
             step_index = i + 1
@@ -77,7 +79,6 @@ class MemoryUnit:
             done_n = np.minimum(done_n, 1)
 
         return obs_n, action_n, reward_n, done_n, obs_next_n, isweight
-
 
 
 class OffPolicyMemoryPool:
