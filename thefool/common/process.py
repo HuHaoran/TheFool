@@ -31,8 +31,8 @@ def learn_process(train_env, test_env, act_func, eval_func, total_steps):
                 local_step[i] = 0
                 episode_reward[i] = 0
 
-        if global_step - last_step > 100000:
-            eval_process(test_env, eval_func, 50000)
+        if global_step - last_step > 10000:
+            eval_process(test_env, eval_func, 10000)
             last_step = global_step
 
 

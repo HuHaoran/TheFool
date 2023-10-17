@@ -1,4 +1,6 @@
 -20.54, -19.75, 5.67, 16.29, 19.6, 20.36, 20.54, 20.63, 20.0
-time:    1:38:26
-step:    917287
-episode: 435
+speed:  238.80 it/s
+
+model = DQN(train_env, test_env, use_dueling=True, use_double=True, use_per=True, n_step=3)
+-8.4, 16.24, 16.24, 19.25, 15.13, 19.46,  20.87
+speed:  162.30 it/s

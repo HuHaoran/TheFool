@@ -23,6 +23,9 @@ class DQN:
                  use_double=False,
                  use_per=False,
                  n_step=1,
+                 use_soft_replace=False,
+                 soft_replace_rate=0.001,
+                 use_average_is=False
                  ):
         self.env = env
         self.test_env = test_env
@@ -43,6 +46,9 @@ class DQN:
         self.use_double = use_double
         self.use_per = use_per
         self.n_step = n_step
+        self.use_soft_replace = use_soft_replace
+        self.soft_replace_rate = np.var(soft_replace_rate, dtype=np.float32)
+        self.use_average_is = use_average_is
 
         self.model = DQNNetwork(self.num_actions, useDueling=self.use_dueling)
         self.target_model = DQNNetwork(self.num_actions, useDueling=self.use_dueling)
@@ -69,7 +75,7 @@ class DQN:
             if (self.global_step / self.train_nums) % self.skip_num == 0:
                 self.train()
                 # print("loss:", loss.numpy())
-            if (self.global_step / self.train_nums) % self.replace_step == 0:
+            if not self.use_soft_replace and (self.global_step / self.train_nums) % self.replace_step == 0:
                 self.replace_target_weight()
 
         self.global_step += self.train_nums
@@ -119,10 +125,20 @@ class DQN:
             gradients = tape.gradient(value_loss, self.model.trainable_variables)
             clipped_gradients, _ = tf.clip_by_global_norm(gradients, self.max_grad_norm)
             self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+            if self.use_average_is:
+                loss = tf.reduce_mean(loss)
+        self.soft_replace_target_weight()
         return loss
 
     def replace_target_weight(self):
         self.target_model.set_weights(self.model.get_weights())
+
+    def soft_replace_target_weight(self):
+        target_weights = self.target_model.weights
+        weights = self.model.weights
+        for i in range(len(target_weights)):
+            tw = 0.001 * weights[i] + (1 - 0.001) * target_weights[i]
+            self.target_model.weights[i].assign(tw)
 
     def learn(self, total_steps: int):
         learn_process(self.env, self.test_env, self.act, self.eval_act, total_steps)
