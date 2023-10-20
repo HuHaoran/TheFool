@@ -44,8 +44,8 @@ def calcAdv(rewards, values, value_inits, terminals, gamma, lam):
     values = np.transpose(values, [1, 0])
     values = np.vstack((values, [value_inits]))
     terminals = np.transpose(terminals, [1, 0])
-    advantages = np.zeros(rewards.shape)
-    td_values = np.zeros(rewards.shape)
+    advantages = np.zeros(rewards.shape, dtype=np.float32)
+    td_values = np.zeros(rewards.shape, dtype=np.float32)
     for i in reversed(range(rewards.shape[0])):
         delta = rewards[i] + (1.0 - terminals[i]) * gamma * values[i + 1] - values[i]
         last_gae_lam = delta + (1.0 - terminals[i]) * last_gae_lam * gamma * lam

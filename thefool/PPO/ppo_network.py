@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 
 class PPONetwork(tf.keras.Model):
@@ -29,6 +30,5 @@ class PPONetwork(tf.keras.Model):
         x = self.flatten(x)
         x = self.dense(x)
         policy = self.policy(x)
-        dist = tf.random.categorical(policy)
         value = self.value(x)
-        return dist, value
+        return policy, value

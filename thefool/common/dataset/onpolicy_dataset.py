@@ -69,12 +69,12 @@ class OnPolicyDataset:
             log_probs_t.append(rollout.log_probs_t)
             terminals_tp1.append(rollout.terminals_tp1)
 
-        obs_t = np.array(obs_t)
-        actions_t = np.array(actions_t)
-        rewards_tp1 = np.array(rewards_tp1)
-        values_t = np.array(values_t)
-        log_probs_t = np.array(log_probs_t)
-        terminals_tp1 = np.array(terminals_tp1)
+        obs_t = np.array(obs_t, dtype=np.float32)
+        actions_t = np.array(actions_t, dtype=np.float32)
+        rewards_tp1 = np.array(rewards_tp1, dtype=np.float32)
+        values_t = np.array(values_t, dtype=np.float32)
+        log_probs_t = np.array(log_probs_t, dtype=np.float32)
+        terminals_tp1 = np.array(terminals_tp1, dtype=np.float32)
 
         #returns_t = compute_returns(rewards_tp1, bootstrap_values, terminals_tp1, gamma)
         #advs_t = compute_gae(rewards_tp1, values_t, bootstrap_values, terminals_tp1, gamma, lam)
