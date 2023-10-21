@@ -24,7 +24,7 @@ class Rollout:
     def flush(self):
         self.index = 0
         self.obs_t = np.zeros([self.time_horizon] + self.state_shape, dtype=np.float32)
-        self.actions_t = np.zeros([self.time_horizon], dtype=np.float32)
+        self.actions_t = np.zeros([self.time_horizon], dtype=np.int32)
         self.rewards_tp1 = np.zeros([self.time_horizon], dtype=np.float32)
         self.values_t = np.zeros([self.time_horizon], dtype=np.float32)
         self.log_probs_t = np.zeros([self.time_horizon], dtype=np.float32)
@@ -70,7 +70,7 @@ class OnPolicyDataset:
             terminals_tp1.append(rollout.terminals_tp1)
 
         obs_t = np.array(obs_t, dtype=np.float32)
-        actions_t = np.array(actions_t, dtype=np.float32)
+        actions_t = np.array(actions_t, dtype=np.int32)
         rewards_tp1 = np.array(rewards_tp1, dtype=np.float32)
         values_t = np.array(values_t, dtype=np.float32)
         log_probs_t = np.array(log_probs_t, dtype=np.float32)

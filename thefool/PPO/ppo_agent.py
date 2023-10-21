@@ -3,6 +3,7 @@ from thefool.PPO.ppo_network import PPONetwork
 import numpy as np
 from thefool.common.dataset.onpolicy_dataset import OnPolicyDataset
 from thefool.common.process import learn_process
+from thefool.common.uilt.probability import compute_entropy
 
 
 class PPO:
@@ -57,8 +58,10 @@ class PPO:
     def _tf_act(self, obs_t):
         probs, value = self.model(obs_t)
         log_prob = tf.math.log(probs)
-        action = tf.random.categorical(log_prob)
-        log_policy = log_prob[:, action]
+        action = tf.random.categorical(log_prob, self.train_nums)[0]
+        print(action)
+        onehot_action = tf.one_hot(action, self.num_actions)
+        log_policy = tf.reduce_sum(onehot_action * log_prob, axis=-1)
         return action, log_policy, value
 
     def act(self, obs_t, reward_t, done_t):
@@ -92,8 +95,7 @@ class PPO:
         return action_t
 
     def eval_act(self, obs_t):
-        dist, _ = self.model(obs_t)
-        probs = dist.probs
+        probs, _ = self.model(obs_t)
         action = tf.argmax(probs, axis=-1)
         return action.numpy()
 
@@ -128,17 +130,18 @@ class PPO:
     @tf.function
     def _tf_train(self, obs, actions, values, tdrets, advantages, old_log_probs):
         with tf.GradientTape() as tape:
-            train_dist, train_value = self.model(obs, training=True)
+            train_probs, train_value = self.model(obs, training=True)
 
             value_clipped = values + tf.clip_by_value(train_value - values, -self.value_clip, self.value_clip)
             value_loss1 = tf.reduce_mean(tf.square(train_value - tdrets))
             value_loss2 = tf.reduce_mean(tf.square(value_clipped - tdrets))
             value_loss = self.value_factor * tf.maximum(value_loss1, value_loss2)
 
-            entropy = tf.reduce_mean(train_dist.entropy())
+            entropy = tf.reduce_mean(compute_entropy(train_probs))
             entropy *= self.entropy_factor
 
-            log_prob = train_dist.log_prob(actions)
+            onehot_action = tf.one_hot(actions, self.num_actions)
+            log_prob = tf.reduce_sum(onehot_action * tf.math.log(train_probs), axis=-1)
             ratio = tf.exp(log_prob - old_log_probs)
             ratio = tf.reshape(ratio, [-1, 1])
             surr1 = ratio * advantages
@@ -148,7 +151,7 @@ class PPO:
 
             loss = value_loss - policy_loss - entropy
 
-            gradients = tape.gradient(value_loss, self.model.trainable_variables)
+            gradients = tape.gradient(loss, self.model.trainable_variables)
             clipped_gradients, _ = tf.clip_by_global_norm(gradients, self.max_grad_norm)
             self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
         return loss
