@@ -28,6 +28,6 @@ class PPONetwork(tf.keras.Model):
         x = self.conv3(x)
         x = self.flatten(x)
         x = self.dense(x)
-        policy = self.policy(x)
+        probs = self.policy(x)
         value = self.value(x)
-        return policy, value
+        return probs, value
