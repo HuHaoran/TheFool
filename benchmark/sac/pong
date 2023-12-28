@@ -1,0 +1,3 @@
+model = SAC(train_env, test_env, use_per=True, n_step=3)
+-10.85  20.36   19.54   20.36
+speed: 143.61 it/s

@@ -7,5 +7,5 @@ train_env, test_env = make_atari_game("PongNoFrameskip-v4", 8, obs_shape=[84, 84
 
 
 # model = PPO(train_env, test_env)
-model = SAC(train_env, test_env, use_per=True, n_step=3)
+model = SAC(train_env, test_env, use_per=True, n_step=3, use_soft_replace=True)
 model.learn(total_steps=100000000)

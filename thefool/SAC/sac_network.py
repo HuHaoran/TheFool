@@ -19,7 +19,7 @@ class SACNetwork(tf.keras.Model):
                                             name='fully_connected')
         self.policy = tf.keras.layers.Dense(num_actions, activation=tf.keras.activations.softmax, name='policy')
         self.q1 = tf.keras.layers.Dense(num_actions, name='q1')
-        self.q2 = tf.keras.layers.Dense(num_actions, name='q1')
+        self.q2 = tf.keras.layers.Dense(num_actions, name='q2')
 
 
     def call(self, state):

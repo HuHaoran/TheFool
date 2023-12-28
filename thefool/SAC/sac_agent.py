@@ -20,6 +20,8 @@ class SAC:
                  use_per=False,
                  n_step=1,
                  soft_replace_rate=0.001,
+                 replace_step=1000,
+                 use_soft_replace=False,
                  use_average_is=False
                  ):
         self.env = env
@@ -39,8 +41,11 @@ class SAC:
         self.use_dueling = use_dueling
         self.use_per = use_per
         self.n_step = n_step
-        self.soft_replace_rate = np.var(soft_replace_rate, dtype=np.float32)
+        self.soft_replace_rate = soft_replace_rate
         self.use_average_is = use_average_is
+        self.replace_step = replace_step
+        self.use_soft_replace = use_soft_replace
+        self.init_replace = False
 
         self.model = SACNetwork(self.num_actions)
         self.target_model = SACNetwork(self.num_actions)
@@ -63,6 +68,7 @@ class SAC:
     def eval_act(self, obs_t):
         probs, _, _ = self.model(obs_t, training=False)
         action = tf.argmax(probs, axis=-1).numpy()
+        # action = self._tf_act(obs_t)
         return action
 
     def act(self, obs_t, reward_t, done_t):
@@ -79,6 +85,8 @@ class SAC:
         if self.global_step > 10000:
             if (self.global_step / self.train_nums) % self.skip_num == 0:
                 self.train()
+            if (self.global_step / self.train_nums) % self.replace_step == 0:
+                self.replace_target_weight()
 
         self.global_step += self.train_nums
 
@@ -89,10 +97,11 @@ class SAC:
         return action_t
 
     def train(self):
+        entropy = []
         for i in range(self.train_nums):
             obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t = self.dataset.sample_unit_batch(i, self.batch_size)
-            value_loss = self._tf_train(obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t)
-
+            value_loss, ent = self._tf_train(obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t)
+            entropy.append(ent.numpy())
             if self.use_per:
                 priority = np.sqrt(np.minimum(value_loss, 1) + 1e-8)
                 self.dataset.sample_update_priority(i, priority)
@@ -101,7 +110,7 @@ class SAC:
     def _tf_train(self, obs_t, action_t, reward_t, done_t, obs_next_t, isweight_t):
         with tf.GradientTape() as tape:
             train_probs, train_q1, train_q2 = self.model(obs_t, training=True)
-            train_next_probs, _, _ = self.model(obs_next_t, training=True)
+            train_next_probs, _, _ = self.model(obs_next_t, training=False)
             _, target_q1, target_q2 = self.target_model(obs_next_t, training=False)
 
             min_q_train = tf.stop_gradient(tf.minimum(train_q1, train_q2))
@@ -110,7 +119,6 @@ class SAC:
             q_backup = tf.stop_gradient(reward_t + self.gamma * (1 - done_t) *
                                         (tf.reduce_sum(min_q_target * train_next_probs, axis=-1) +
                                          self.alpha * compute_entropy(train_next_probs)))
-
             # Soft actor-critic losses
             pi_loss = -tf.reduce_mean(tf.reduce_sum(min_q_train * train_probs, axis=-1)
                                       + self.alpha * compute_entropy(train_probs))
@@ -128,15 +136,23 @@ class SAC:
                 pri_loss = tf.reduce_mean(value_loss)
             else:
                 pri_loss = value_loss
-        self.soft_replace_target_weight()
-        return pri_loss
+        # self.soft_replace_target_weight()
+        return pri_loss, compute_entropy(train_probs)
+
+    def replace_target_weight(self):
+        self.target_model.set_weights(self.model.get_weights())
 
     def soft_replace_target_weight(self):
-        target_weights = self.target_model.weights
-        weights = self.model.weights
-        for i in range(len(target_weights)):
-            tw = self.soft_replace_rate * weights[i] + (1 - self.soft_replace_rate) * target_weights[i]
-            self.target_model.weights[i].assign(tw)
+        weights = self.model.get_weights()
+        target_weights = self.target_model.get_weights()
+        if self.init_replace:
+            for i in range(len(target_weights)):
+                target_weights[i] = weights[i] * self.soft_replace_rate + target_weights[i] * (
+                            1 - self.soft_replace_rate)
+            self.target_model.set_weights(target_weights)
+        else:
+            self.target_model.set_weights(weights)
+            self.init_replace = True
 
     def learn(self, total_steps: int):
         learn_process(self.env, self.test_env, self.act, self.eval_act, total_steps)
