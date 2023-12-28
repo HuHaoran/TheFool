@@ -44,7 +44,7 @@ class SAC:
         self.soft_replace_rate = soft_replace_rate
         self.use_average_is = use_average_is
         self.replace_step = replace_step
-        self.use_soft_replace = use_soft_replace
+        self.use_soft_replace = False # 目前还不支持
         self.init_replace = False
 
         self.model = SACNetwork(self.num_actions)
