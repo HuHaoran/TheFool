@@ -18,8 +18,17 @@ class SACNetwork(tf.keras.Model):
         self.dense = tf.keras.layers.Dense(512, activation=activation_fn,
                                             name='fully_connected')
         self.policy = tf.keras.layers.Dense(num_actions, activation=tf.keras.activations.softmax, name='policy')
-        self.q1 = tf.keras.layers.Dense(num_actions, name='q1')
-        self.q2 = tf.keras.layers.Dense(num_actions, name='q2')
+
+        self.q1_value1 = tf.keras.layers.Dense(512, activation=activation_fn, name='q1_value1')
+        self.q1_value2 = tf.keras.layers.Dense(1, name='q1_value2')
+        self.q1_adv1 = tf.keras.layers.Dense(512, activation=activation_fn, name='q1_adv1')
+        self.q1_adv2 = tf.keras.layers.Dense(num_actions, name='q1_adv2')
+
+        self.q2_value1 = tf.keras.layers.Dense(512, activation=activation_fn, name='q2_value1')
+        self.q2_value2 = tf.keras.layers.Dense(1, name='q2_value2')
+        self.q2_adv1 = tf.keras.layers.Dense(512, activation=activation_fn, name='q2_adv1')
+        self.q2_adv2 = tf.keras.layers.Dense(num_actions, name='q2_adv2')
+
 
 
     def call(self, state):
@@ -28,8 +37,20 @@ class SACNetwork(tf.keras.Model):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.flatten(x)
-        x = self.dense(x)
-        probs = self.policy(x)
-        q1 = self.q1(x)
-        q2 = self.q2(x)
+        p = self.dense(x)
+        probs = self.policy(p)
+
+        adv1 = self.q1_adv1(x)
+        adv1 = self.q1_adv2(adv1)
+        value1 = self.q1_value1(x)
+        value1 = self.q1_value2(value1)
+        q1 = value1 + (adv1 - tf.reduce_mean(adv1, axis=-1, keepdims=True))
+
+        adv2 = self.q2_adv1(x)
+        adv2 = self.q2_adv2(adv2)
+        value2 = self.q2_value1(x)
+        value2 = self.q2_value2(value2)
+        q2 = value2 + (adv2 - tf.reduce_mean(adv2, axis=-1, keepdims=True))
+
+
         return probs, q1, q2

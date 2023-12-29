@@ -127,7 +127,8 @@ class DQN:
             self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
             if self.use_average_is:
                 loss = tf.reduce_mean(loss)
-        self.soft_replace_target_weight()
+        if self.use_soft_replace:
+            self.soft_replace_target_weight()
         return loss
 
     def replace_target_weight(self):
@@ -137,7 +138,7 @@ class DQN:
         target_weights = self.target_model.weights
         weights = self.model.weights
         for i in range(len(target_weights)):
-            tw = 0.001 * weights[i] + (1 - 0.001) * target_weights[i]
+            tw = self.soft_replace_rate * weights[i] + (1 - self.soft_replace_rate) * target_weights[i]
             self.target_model.weights[i].assign(tw)
 
     def learn(self, total_steps: int):

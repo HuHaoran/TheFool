@@ -85,8 +85,8 @@ class SAC:
         if self.global_step > 10000:
             if (self.global_step / self.train_nums) % self.skip_num == 0:
                 self.train()
-            if (self.global_step / self.train_nums) % self.replace_step == 0:
-                self.replace_target_weight()
+            # if (self.global_step / self.train_nums) % self.replace_step == 0:
+            #     self.replace_target_weight()
 
         self.global_step += self.train_nums
 
@@ -136,23 +136,18 @@ class SAC:
                 pri_loss = tf.reduce_mean(value_loss)
             else:
                 pri_loss = value_loss
-        # self.soft_replace_target_weight()
+        self.soft_replace_target_weight()
         return pri_loss, compute_entropy(train_probs)
 
     def replace_target_weight(self):
         self.target_model.set_weights(self.model.get_weights())
 
     def soft_replace_target_weight(self):
-        weights = self.model.get_weights()
-        target_weights = self.target_model.get_weights()
-        if self.init_replace:
-            for i in range(len(target_weights)):
-                target_weights[i] = weights[i] * self.soft_replace_rate + target_weights[i] * (
-                            1 - self.soft_replace_rate)
-            self.target_model.set_weights(target_weights)
-        else:
-            self.target_model.set_weights(weights)
-            self.init_replace = True
+        target_weights = self.target_model.weights
+        weights = self.model.weights
+        for i in range(len(target_weights)):
+            tw = self.soft_replace_rate * weights[i] + (1 - self.soft_replace_rate) * target_weights[i]
+            self.target_model.weights[i].assign(tw)
 
     def learn(self, total_steps: int):
         learn_process(self.env, self.test_env, self.act, self.eval_act, total_steps)

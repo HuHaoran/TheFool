@@ -32,11 +32,11 @@ def learn_process(train_env, test_env, act_func, eval_func, total_steps):
                 episode_reward[i] = 0
 
         if global_step - last_step > 100000:
-            eval_process(test_env, eval_func, 20000)
+            eval_process(test_env, eval_func)
             last_step = global_step
 
 
-def eval_process(test_env, eval_func, total_step):
+def eval_process(test_env, eval_func):
 
     episodes = 0
     local_step = 0
@@ -45,7 +45,7 @@ def eval_process(test_env, eval_func, total_step):
     states = test_env.reset()
     sum_reward = []
 
-    while local_step < total_step and episodes < 100:
+    while episodes < 20:
 
         action = eval_func(states)
         states, rewards, dones, infos = test_env.step(action)

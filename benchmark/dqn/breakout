@@ -1,0 +1,7 @@
+model = DQN(train_env, test_env)
+0.0, 11.7, 51.25, 46.6, 54.5, 74.6, 72.7, 128.0, 207.7, 91.1, 191.25, 211.1
+speed:  226.59 it/s
+
+model = DQN(train_env, test_env, use_double=False, use_dueling=False, use_per=True, use_average_is=False, n_step=1)
+2.25, 19.45, 48.95, 48.1, 72.6, 56.15, 24.5, 115.25, 182.8, 166.35, 264.3, 253.4, 220.4
+speed:  163.94
