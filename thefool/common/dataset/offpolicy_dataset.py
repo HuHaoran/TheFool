@@ -56,11 +56,6 @@ class MemoryUnit:
             batch_index, isweight = self.sum_tree.sample(batch_size, index_max)
         else:
             batch_index = np.array(np.random.random_integers(0, index_max-1, batch_size))
-        obs_n = self.obs_t[batch_index]
-        action_n = self.actions_t[batch_index]
-        done_n = self.done_t[batch_index]
-        reward_n = self.reward_t[batch_index]
-        obs_next_n = self.obs_t[(batch_index + step) % index_max]
 
         # 替换掉最新加入记忆池n-step的index，如果选到的话会导致obs_next_n和reward出错
         newest_index = self.index % self.size
@@ -71,13 +66,18 @@ class MemoryUnit:
             if index + step > tmp_new_index:
                 batch_index[i] = (batch_index[i] - random.randint(step, self.size-step)) % self.size
 
+        obs_n = self.obs_t[batch_index]
+        action_n = self.actions_t[batch_index]
+        done_n = self.done_t[batch_index]
+        reward_n = self.reward_t[batch_index]
+        obs_next_n = self.obs_t[(batch_index + step) % index_max]
+
         for i in range(step - 1):
             step_index = i + 1
             next_index = (batch_index + step_index) % index_max
             reward_n += self.reward_t[next_index] * math.pow(gamma, step_index) * (1.0 - done_n)
             done_n += self.done_t[next_index]
             done_n = np.minimum(done_n, 1)
-
         return obs_n, action_n, reward_n, done_n, obs_next_n, isweight
 
 
