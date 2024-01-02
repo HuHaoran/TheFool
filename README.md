@@ -18,6 +18,7 @@ conda create -n your_env_name python=3.8
 7. pip install --no-index -f https://github.com/Kojoley/atari-py/releases atari_py
 8. pip install opencv-python
 9. pip install tqdm
+10. pip install autorom[accept-rom-license] # for more games
 
 # 快速上手
 直接运行 `python train_atari.py` 即可体验atari游戏训练过程

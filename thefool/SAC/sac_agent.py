@@ -1,5 +1,5 @@
 import tensorflow as tf
-from thefool.SAC.sac_network import SACNetwork
+from thefool.SAC.sac_network import SACNetwork, SACDuelingNetwork
 from thefool.common.dataset.offpolicy_dataset import OffPolicyMemoryPool
 from thefool.common.process import learn_process
 from thefool.common.uilt.probability import compute_entropy
@@ -44,11 +44,14 @@ class SAC:
         self.soft_replace_rate = soft_replace_rate
         self.use_average_is = use_average_is
         self.replace_step = replace_step
-        self.use_soft_replace = False # 目前还不支持
+        self.use_soft_replace = use_soft_replace # 目前还不支持
         self.init_replace = False
-
-        self.model = SACNetwork(self.num_actions)
-        self.target_model = SACNetwork(self.num_actions)
+        if self.use_soft_replace:
+            self.model = SACNetwork(self.num_actions)
+            self.target_model = SACNetwork(self.num_actions)
+        else:
+            self.model = SACDuelingNetwork(self.num_actions)
+            self.target_model = SACDuelingNetwork(self.num_actions)
         self.target_model.set_weights(self.model.get_weights())
         self.optimizer = tf.keras.optimizers.Adam(self.learning_rate, epsilon=1e-5)
 
@@ -85,8 +88,8 @@ class SAC:
         if self.global_step > 10000:
             if (self.global_step / self.train_nums) % self.skip_num == 0:
                 self.train()
-            # if (self.global_step / self.train_nums) % self.replace_step == 0:
-            #     self.replace_target_weight()
+            if not self.use_soft_replace and (self.global_step / self.train_nums) % self.replace_step == 0:
+                self.replace_target_weight()
 
         self.global_step += self.train_nums
 
@@ -136,7 +139,8 @@ class SAC:
                 pri_loss = tf.reduce_mean(value_loss)
             else:
                 pri_loss = value_loss
-        self.soft_replace_target_weight()
+        if self.use_soft_replace:
+            self.soft_replace_target_weight()
         return pri_loss, compute_entropy(train_probs)
 
     def replace_target_weight(self):
